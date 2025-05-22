@@ -1,247 +1,48 @@
 
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import db from "@/services/mockDatabase";
+import { useRequestPage } from "@/hooks/useRequestPage";
+import LoginForm from "@/components/request/LoginForm";
+import RequestTypeSelector from "@/components/request/RequestTypeSelector";
+import RequestForm from "@/components/request/RequestForm";
+import SubmissionConfirmation from "@/components/request/SubmissionConfirmation";
+import RequestHeader from "@/components/request/RequestHeader";
 
 const RequestPage = () => {
   const { orgIdEncoded } = useParams<{ orgIdEncoded: string }>();
-  const navigate = useNavigate();
-  const [orgId, setOrgId] = useState<number | null>(null);
-  const [orgName, setOrgName] = useState("");
-  const [requestType, setRequestType] = useState<"dp-request" | "grievance" | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Form fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dpRequestType, setDpRequestType] = useState("Access");
-  const [comments, setComments] = useState("");
-  
-  useEffect(() => {
-    if (orgIdEncoded) {
-      try {
-        const decoded = atob(orgIdEncoded);
-        const orgParam = new URLSearchParams(decoded).get("org");
-        
-        if (orgParam) {
-          const id = parseInt(orgParam);
-          setOrgId(id);
-          
-          // Get organization name
-          const org = db.getOrganisationById(id);
-          if (org) {
-            setOrgName(org.businessName);
-          } else {
-            toast({
-              title: "Error",
-              description: "Invalid organization",
-              variant: "destructive",
-            });
-            navigate("/");
-          }
-        }
-      } catch (error) {
-        console.error("Failed to decode parameters:", error);
-        navigate("/");
-      }
-    }
-  }, [orgIdEncoded, navigate]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    // Simple login validation
-    if (!email.trim() || !email.includes("@")) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoggedIn(true);
-      setIsLoading(false);
-      toast({
-        title: "Login Successful",
-        description: "You are now logged in to submit a request.",
-      });
-    }, 1000);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!orgId) return;
-    
-    setIsLoading(true);
-
-    // Form validation
-    if (!firstName || !lastName || !email || !phone || !comments) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      if (requestType === "dp-request") {
-        // Calculate completion date (7 days from now)
-        const completionDate = new Date();
-        completionDate.setDate(completionDate.getDate() + 7);
-
-        // Submit data principal request
-        const newRequest = {
-          firstName,
-          lastName,
-          email,
-          phone,
-          requestType: dpRequestType as "Access" | "Correction" | "Nomination" | "Erasure",
-          requestComment: comments,
-          organisationId: orgId,
-          createdAt: new Date().toISOString(),
-          assignedTo: 0, // Will be assigned to org admin 
-          completionDate: completionDate.toISOString(),
-          completedOnTime: false,
-          dpr_RequestStatusId: 1, // Submitted status
-          closureComments: "",
-          closureDateTime: "",
-        };
-        
-        // Add request to mock database
-        const savedRequest = db.addDPRequest(newRequest);
-        
-        // Add history entry
-        db.addDPRequestHistory({
-          historyId: 0, // Will be auto-assigned
-          dpRequestId: savedRequest.dpRequestId,
-          statusId: 1,
-          statusName: "Submitted",
-          assignedTo: 0,
-          assignedToName: "Organization Admin",
-          updatedBy: 0,
-          updatedByName: `${firstName} ${lastName} (Requester)`,
-          updatedAt: new Date().toISOString(),
-          comments: "Request created by data principal",
-          organisationId: orgId
-        });
-
-        console.log("Created DP request:", savedRequest);
-      } else {
-        // Calculate completion date (7 days from now)
-        const completionDate = new Date();
-        completionDate.setDate(completionDate.getDate() + 7);
-
-        // Submit grievance
-        const newGrievance = {
-          firstName,
-          lastName,
-          email,
-          phone,
-          organisationId: orgId,
-          grievanceComments: comments,
-          createdAt: new Date().toISOString(),
-          assignedTo: 0, // Will be assigned to org admin
-          completionDate: completionDate.toISOString(),
-          completedOnTime: false,
-          requestStatusId: 1, // Submitted status
-          closureComments: "",
-          closedDateTime: "",
-        };
-        
-        // Add grievance to mock database
-        const savedGrievance = db.addGrievance(newGrievance);
-        
-        // Add history entry
-        db.addGrievanceHistory({
-          historyId: 0, // Will be auto-assigned
-          grievanceId: savedGrievance.grievanceId,
-          statusId: 1,
-          statusName: "Submitted",
-          assignedTo: 0,
-          assignedToName: "Organization Admin",
-          updatedBy: 0,
-          updatedByName: `${firstName} ${lastName} (Requester)`,
-          updatedAt: new Date().toISOString(),
-          comments: "Grievance created by user",
-          organisationId: orgId
-        });
-
-        console.log("Created grievance:", savedGrievance);
-      }
-      
-      setTimeout(() => {
-        setIsSubmitted(true);
-        setIsLoading(false);
-        toast({
-          title: "Request Submitted",
-          description: "Your request has been submitted successfully.",
-        });
-      }, 1000);
-    } catch (error) {
-      console.error("Failed to submit request:", error);
-      setIsLoading(false);
-      toast({
-        title: "Submission Failed",
-        description: "An error occurred while submitting your request.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setRequestType(null);
-    setIsSubmitted(false);
-    // Reset form fields
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPhone("");
-    setComments("");
-    setDpRequestType("Access");
-  };
+  const {
+    orgName,
+    requestType,
+    isLoggedIn,
+    isSubmitted,
+    isLoading,
+    firstName,
+    lastName,
+    email,
+    phone,
+    dpRequestType,
+    comments,
+    setRequestType,
+    setFirstName,
+    setLastName,
+    setEmail,
+    setPhone,
+    setDpRequestType,
+    setComments,
+    handleLogin,
+    handleSubmit,
+    handleLogout
+  } = useRequestPage({ orgIdEncoded });
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30 p-6">
       <header className="w-full max-w-3xl mx-auto mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary rounded-md p-1">
-              <span className="text-white font-bold text-xl">C</span>
-            </div>
-            <span className="font-bold text-lg">ComplyArk</span>
-          </div>
-          {isLoggedIn && (
-            <Button variant="ghost" onClick={handleLogout}>
-              Logout
-            </Button>
-          )}
-        </div>
+        <RequestHeader 
+          orgName={orgName} 
+          isLoggedIn={isLoggedIn} 
+          onLogout={handleLogout} 
+        />
       </header>
 
       <main className="flex-grow flex items-center justify-center">
@@ -255,22 +56,12 @@ const RequestPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Processing..." : "Continue with Email"}
-                  </Button>
-                </form>
+                <LoginForm 
+                  email={email} 
+                  setEmail={setEmail} 
+                  isLoading={isLoading} 
+                  onLogin={handleLogin} 
+                />
               </CardContent>
             </Card>
           ) : !requestType && !isSubmitted ? (
@@ -282,24 +73,7 @@ const RequestPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button
-                    variant="outline"
-                    className="h-32 flex flex-col items-center justify-center"
-                    onClick={() => setRequestType("dp-request")}
-                  >
-                    <div className="text-3xl mb-2">📋</div>
-                    <div className="font-medium">Data Principal Request</div>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-32 flex flex-col items-center justify-center"
-                    onClick={() => setRequestType("grievance")}
-                  >
-                    <div className="text-3xl mb-2">⚠️</div>
-                    <div className="font-medium">Grievance Logging</div>
-                  </Button>
-                </div>
+                <RequestTypeSelector setRequestType={setRequestType} />
               </CardContent>
             </Card>
           ) : isSubmitted ? (
@@ -311,18 +85,7 @@ const RequestPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-muted p-4 rounded-md">
-                  <p>
-                    Thank you for your submission. Your request has been received and
-                    will be processed by {orgName}.
-                  </p>
-                  <p className="mt-2">
-                    A confirmation has been sent to your email address.
-                  </p>
-                </div>
-                <div className="flex justify-center">
-                  <Button onClick={handleLogout}>Submit Another Request</Button>
-                </div>
+                <SubmissionConfirmation onLogout={handleLogout} />
               </CardContent>
             </Card>
           ) : (
@@ -338,97 +101,23 @@ const RequestPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        placeholder="Enter your first name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Enter your last name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        placeholder="Enter your phone number"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {requestType === "dp-request" && (
-                      <div className="space-y-2 col-span-full">
-                        <Label htmlFor="requestType">Request Type</Label>
-                        <Select
-                          value={dpRequestType}
-                          onValueChange={setDpRequestType}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select request type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Access">Access</SelectItem>
-                            <SelectItem value="Correction">Correction</SelectItem>
-                            <SelectItem value="Nomination">Nomination</SelectItem>
-                            <SelectItem value="Erasure">Erasure</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div className="space-y-2 col-span-full">
-                      <Label htmlFor="comments">
-                        {requestType === "dp-request"
-                          ? "Request Comments"
-                          : "Grievance Comments"}
-                      </Label>
-                      <Textarea
-                        id="comments"
-                        placeholder={
-                          requestType === "dp-request"
-                            ? "Please provide details about your request"
-                            : "Please describe your grievance in detail"
-                        }
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        rows={5}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isLoading}>
-                      {isLoading ? "Submitting..." : "Submit"}
-                    </Button>
-                  </div>
-                </form>
+                <RequestForm 
+                  requestType={requestType}
+                  firstName={firstName}
+                  setFirstName={setFirstName}
+                  lastName={lastName}
+                  setLastName={setLastName}
+                  email={email}
+                  setEmail={setEmail}
+                  phone={phone}
+                  setPhone={setPhone}
+                  dpRequestType={dpRequestType}
+                  setDpRequestType={setDpRequestType}
+                  comments={comments}
+                  setComments={setComments}
+                  isLoading={isLoading}
+                  handleSubmit={handleSubmit}
+                />
               </CardContent>
             </Card>
           )}

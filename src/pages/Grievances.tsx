@@ -180,7 +180,7 @@ const Grievances = () => {
                 { 
                   header: "Contact", 
                   accessor: "email",
-                  render: (row) => (
+                  cell: (row) => (
                     <div>
                       <div>{row.email}</div>
                       <div className="text-xs text-muted-foreground">{row.phone}</div>
@@ -192,7 +192,7 @@ const Grievances = () => {
                 { 
                   header: "Status", 
                   accessor: "status",
-                  render: (row) => {
+                  cell: (row) => {
                     let badgeClass = "bg-gray-100 text-gray-800";
                     
                     switch(row.status) {

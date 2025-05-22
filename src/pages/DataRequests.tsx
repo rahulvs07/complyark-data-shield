@@ -1,15 +1,13 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layouts/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import DataTable from "@/components/DataTable";
 import { useAuth } from "@/contexts/AuthContext";
-import { DPRequest } from "@/types/models";
 import db from "@/services/mockDatabase";
 import { toast } from "@/hooks/use-toast";
+import { DPRequest } from "@/types/models";
 import {
   CalendarClock,
   ClipboardCheck,
@@ -21,21 +19,20 @@ import {
 const DataRequests = () => {
   const { user, isOrgAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
-  const [activeRequestType, setActiveRequestType] = useState("all");
-  const [requests, setRequests] = useState<DPRequest[]>([]);
+  const [dataRequests, setDataRequests] = useState<DPRequest[]>([]);
 
   // For a real application, this would come from API calls
   // For now, we'll use the mock database
   const requestStatuses = [
-    { id: 1, name: "Submitted", count: 3 },
-    { id: 2, name: "In Progress", count: 2 },
+    { id: 1, name: "Submitted", count: 4 },
+    { id: 2, name: "In Progress", count: 3 },
     { id: 3, name: "Awaiting Info", count: 1 },
     { id: 4, name: "Reassigned", count: 0 },
     { id: 5, name: "Escalated", count: 2 },
-    { id: 6, name: "Closed", count: 5 },
+    { id: 6, name: "Closed", count: 6 },
   ];
 
-  // Function to handle request status change
+  // Function to handle data request status change
   const handleStatusChange = (requestId: number, newStatusId: number) => {
     // In a real app, this would call an API endpoint
     toast({
@@ -44,7 +41,7 @@ const DataRequests = () => {
     });
   };
 
-  // Function to handle request assignment
+  // Function to handle data request assignment
   const handleAssignRequest = (requestId: number, userId: number) => {
     // In a real app, this would call an API endpoint
     toast({
@@ -53,7 +50,7 @@ const DataRequests = () => {
     });
   };
 
-  // Function to view request details
+  // Function to view data request details
   const handleViewRequest = (requestId: number) => {
     // In a real app, this would navigate to a details page
     console.log("View request details for:", requestId);
@@ -65,7 +62,7 @@ const DataRequests = () => {
         <div className="flex flex-col gap-4">
           <h2 className="text-3xl font-bold tracking-tight">Data Principal Requests</h2>
           <p className="text-muted-foreground">
-            Manage data subject access requests and other data rights requests.
+            Manage and track data principal requests submitted by users
           </p>
         </div>
 
@@ -139,21 +136,8 @@ const DataRequests = () => {
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Request List</CardTitle>
-            <div className="flex items-center space-x-2">
-              <select
-                className="p-2 border rounded-md"
-                value={activeRequestType}
-                onChange={(e) => setActiveRequestType(e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="Access">Access</option>
-                <option value="Correction">Correction</option>
-                <option value="Nomination">Nomination</option>
-                <option value="Erasure">Erasure</option>
-              </select>
-            </div>
+          <CardHeader>
+            <CardTitle>Data Principal Requests</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable
@@ -162,34 +146,31 @@ const DataRequests = () => {
                   id: 1,
                   name: "John Doe",
                   email: "john.doe@example.com",
-                  phone: "+91 98765 43210",
-                  assignedTo: "Sarah Smith",
-                  createdDate: "2023-05-20",
+                  phone: "+1 555-123-4567",
                   requestType: "Access",
-                  lastUpdateDate: "2023-05-22",
+                  assignedTo: "Jane Smith",
                   status: "In Progress",
+                  actionDate: "2023-05-25",
                 },
                 {
                   id: 2,
-                  name: "Jane Smith",
-                  email: "jane.smith@example.com",
-                  phone: "+91 87654 32109",
-                  assignedTo: "Mike Johnson",
-                  createdDate: "2023-05-18",
+                  name: "Alice Johnson",
+                  email: "alice.johnson@example.com",
+                  phone: "+1 555-987-6543",
                   requestType: "Correction",
-                  lastUpdateDate: "2023-05-21",
+                  assignedTo: "Bob Williams",
                   status: "Submitted",
+                  actionDate: "2023-05-22",
                 },
                 {
                   id: 3,
-                  name: "Robert Brown",
-                  email: "robert.brown@example.com",
-                  phone: "+91 76543 21098",
-                  assignedTo: "Sarah Smith",
-                  createdDate: "2023-05-15",
+                  name: "Bob Williams",
+                  email: "bob.williams@example.com",
+                  phone: "+1 555-456-7890",
                   requestType: "Erasure",
-                  lastUpdateDate: "2023-05-23",
+                  assignedTo: "Jane Smith",
                   status: "Escalated",
+                  actionDate: "2023-05-28",
                 },
               ]}
               columns={[
@@ -198,28 +179,19 @@ const DataRequests = () => {
                 { 
                   header: "Contact", 
                   accessor: "email",
-                  render: (row) => (
+                  cell: (row) => (
                     <div>
                       <div>{row.email}</div>
                       <div className="text-xs text-muted-foreground">{row.phone}</div>
                     </div>
                   )
                 },
+                { header: "Request Type", accessor: "requestType" },
                 { header: "Assigned To", accessor: "assignedTo" },
-                { header: "Created Date", accessor: "createdDate" },
-                { 
-                  header: "Request Type", 
-                  accessor: "requestType",
-                  render: (row) => (
-                    <Badge variant="outline" className="font-normal">
-                      {row.requestType}
-                    </Badge>
-                  )
-                },
                 { 
                   header: "Status", 
                   accessor: "status",
-                  render: (row) => {
+                  cell: (row) => {
                     let badgeClass = "bg-gray-100 text-gray-800";
                     
                     switch(row.status) {
@@ -247,7 +219,19 @@ const DataRequests = () => {
                     );
                   }
                 },
-                { header: "Last Update", accessor: "lastUpdateDate" },
+                { 
+                  header: "Action Required By", 
+                  accessor: "actionDate",
+                  cell: (row) => {
+                    const date = new Date(row.actionDate);
+                    const formattedDate = date.toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    });
+                    return <div>{formattedDate}</div>;
+                  }
+                },
               ]}
               onView={(row) => handleViewRequest(row.id)}
               onEdit={isOrgAdmin ? (row) => console.log("Edit request", row) : undefined}
