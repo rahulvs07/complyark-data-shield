@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import db from "@/services/mockDatabase";
 
@@ -25,6 +24,7 @@ const RequestPage = () => {
   const [requestType, setRequestType] = useState<"dp-request" | "grievance" | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -66,6 +66,8 @@ const RequestPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
     // Simple login validation
     if (!email.trim() || !email.includes("@")) {
       toast({
@@ -73,14 +75,19 @@ const RequestPage = () => {
         description: "Please enter a valid email address.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
     
-    setIsLoggedIn(true);
-    toast({
-      title: "Login Successful",
-      description: "You are now logged in to submit a request.",
-    });
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoggedIn(true);
+      setIsLoading(false);
+      toast({
+        title: "Login Successful",
+        description: "You are now logged in to submit a request.",
+      });
+    }, 1000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -88,8 +95,25 @@ const RequestPage = () => {
     
     if (!orgId) return;
     
+    setIsLoading(true);
+
+    // Form validation
+    if (!firstName || !lastName || !email || !phone || !comments) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       if (requestType === "dp-request") {
+        // Calculate completion date (7 days from now)
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + 7);
+
         // Submit data principal request
         const newRequest = {
           firstName,
@@ -100,16 +124,38 @@ const RequestPage = () => {
           requestComment: comments,
           organisationId: orgId,
           createdAt: new Date().toISOString(),
-          assignedTo: 0, // Will be set to org admin in the backend
-          completionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+          assignedTo: 0, // Will be assigned to org admin 
+          completionDate: completionDate.toISOString(),
           completedOnTime: false,
           dpr_RequestStatusId: 1, // Submitted status
           closureComments: "",
           closureDateTime: "",
         };
         
-        db.addDPRequest(newRequest);
+        // Add request to mock database
+        const savedRequest = db.addDPRequest(newRequest);
+        
+        // Add history entry
+        db.addDPRequestHistory({
+          historyId: 0, // Will be auto-assigned
+          dpRequestId: savedRequest.dpRequestId,
+          statusId: 1,
+          statusName: "Submitted",
+          assignedTo: 0,
+          assignedToName: "Organization Admin",
+          updatedBy: 0,
+          updatedByName: `${firstName} ${lastName} (Requester)`,
+          updatedAt: new Date().toISOString(),
+          comments: "Request created by data principal",
+          organisationId: orgId
+        });
+
+        console.log("Created DP request:", savedRequest);
       } else {
+        // Calculate completion date (7 days from now)
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + 7);
+
         // Submit grievance
         const newGrievance = {
           firstName,
@@ -119,24 +165,46 @@ const RequestPage = () => {
           organisationId: orgId,
           grievanceComments: comments,
           createdAt: new Date().toISOString(),
-          assignedTo: 0, // Will be set to org admin in the backend
-          completionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+          assignedTo: 0, // Will be assigned to org admin
+          completionDate: completionDate.toISOString(),
           completedOnTime: false,
           requestStatusId: 1, // Submitted status
           closureComments: "",
           closedDateTime: "",
         };
         
-        db.addGrievance(newGrievance);
+        // Add grievance to mock database
+        const savedGrievance = db.addGrievance(newGrievance);
+        
+        // Add history entry
+        db.addGrievanceHistory({
+          historyId: 0, // Will be auto-assigned
+          grievanceId: savedGrievance.grievanceId,
+          statusId: 1,
+          statusName: "Submitted",
+          assignedTo: 0,
+          assignedToName: "Organization Admin",
+          updatedBy: 0,
+          updatedByName: `${firstName} ${lastName} (Requester)`,
+          updatedAt: new Date().toISOString(),
+          comments: "Grievance created by user",
+          organisationId: orgId
+        });
+
+        console.log("Created grievance:", savedGrievance);
       }
       
-      setIsSubmitted(true);
-      toast({
-        title: "Request Submitted",
-        description: "Your request has been submitted successfully.",
-      });
+      setTimeout(() => {
+        setIsSubmitted(true);
+        setIsLoading(false);
+        toast({
+          title: "Request Submitted",
+          description: "Your request has been submitted successfully.",
+        });
+      }, 1000);
     } catch (error) {
       console.error("Failed to submit request:", error);
+      setIsLoading(false);
       toast({
         title: "Submission Failed",
         description: "An error occurred while submitting your request.",
@@ -149,6 +217,13 @@ const RequestPage = () => {
     setIsLoggedIn(false);
     setRequestType(null);
     setIsSubmitted(false);
+    // Reset form fields
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setComments("");
+    setDpRequestType("Access");
   };
 
   return (
@@ -192,8 +267,8 @@ const RequestPage = () => {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full">
-                    Continue with Email
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Processing..." : "Continue with Email"}
                   </Button>
                 </form>
               </CardContent>
@@ -240,6 +315,9 @@ const RequestPage = () => {
                   <p>
                     Thank you for your submission. Your request has been received and
                     will be processed by {orgName}.
+                  </p>
+                  <p className="mt-2">
+                    A confirmation has been sent to your email address.
                   </p>
                 </div>
                 <div className="flex justify-center">
@@ -346,7 +424,9 @@ const RequestPage = () => {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit">Submit</Button>
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? "Submitting..." : "Submit"}
+                    </Button>
                   </div>
                 </form>
               </CardContent>

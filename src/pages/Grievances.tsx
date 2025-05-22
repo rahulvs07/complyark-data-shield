@@ -2,13 +2,13 @@
 import { useState } from "react";
 import MainLayout from "@/components/layouts/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import DataTable from "@/components/DataTable";
 import { useAuth } from "@/contexts/AuthContext";
-import { Grievance } from "@/types/models";
 import db from "@/services/mockDatabase";
 import { toast } from "@/hooks/use-toast";
+import { Grievance } from "@/types/models";
 import {
   CalendarClock,
   ClipboardCheck,
@@ -25,12 +25,12 @@ const Grievances = () => {
   // For a real application, this would come from API calls
   // For now, we'll use the mock database
   const requestStatuses = [
-    { id: 1, name: "Submitted", count: 2 },
+    { id: 1, name: "Submitted", count: 4 },
     { id: 2, name: "In Progress", count: 3 },
     { id: 3, name: "Awaiting Info", count: 1 },
-    { id: 4, name: "Reassigned", count: 1 },
-    { id: 5, name: "Escalated", count: 1 },
-    { id: 6, name: "Closed", count: 4 },
+    { id: 4, name: "Reassigned", count: 0 },
+    { id: 5, name: "Escalated", count: 2 },
+    { id: 6, name: "Closed", count: 6 },
   ];
 
   // Function to handle grievance status change
@@ -63,7 +63,7 @@ const Grievances = () => {
         <div className="flex flex-col gap-4">
           <h2 className="text-3xl font-bold tracking-tight">Grievances</h2>
           <p className="text-muted-foreground">
-            Manage grievances submitted by data principals.
+            Manage and track grievances submitted by data subjects
           </p>
         </div>
 
@@ -138,37 +138,37 @@ const Grievances = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Grievance List</CardTitle>
+            <CardTitle>Grievances List</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable
               data={[
                 {
                   id: 1,
-                  name: "Alice Johnson",
-                  email: "alice.johnson@example.com",
+                  name: "Priya Sharma",
+                  email: "priya.sharma@example.com",
                   phone: "+91 98765 43210",
-                  assignedTo: "Mike Thompson",
+                  assignedTo: "Sarah Smith",
                   createdDate: "2023-05-20",
                   lastUpdateDate: "2023-05-22",
                   status: "In Progress",
                 },
                 {
                   id: 2,
-                  name: "Bob Williams",
-                  email: "bob.williams@example.com",
+                  name: "Rahul Kumar",
+                  email: "rahul.kumar@example.com",
                   phone: "+91 87654 32109",
-                  assignedTo: "Lisa Chen",
+                  assignedTo: "Mike Johnson",
                   createdDate: "2023-05-18",
                   lastUpdateDate: "2023-05-21",
                   status: "Submitted",
                 },
                 {
                   id: 3,
-                  name: "Carol Davis",
-                  email: "carol.davis@example.com",
+                  name: "Anil Reddy",
+                  email: "anil.reddy@example.com",
                   phone: "+91 76543 21098",
-                  assignedTo: "Mike Thompson",
+                  assignedTo: "Sarah Smith",
                   createdDate: "2023-05-15",
                   lastUpdateDate: "2023-05-23",
                   status: "Escalated",
@@ -180,7 +180,7 @@ const Grievances = () => {
                 { 
                   header: "Contact", 
                   accessor: "email",
-                  cell: (row) => (
+                  render: (row) => (
                     <div>
                       <div>{row.email}</div>
                       <div className="text-xs text-muted-foreground">{row.phone}</div>
@@ -192,7 +192,7 @@ const Grievances = () => {
                 { 
                   header: "Status", 
                   accessor: "status",
-                  cell: (row) => {
+                  render: (row) => {
                     let badgeClass = "bg-gray-100 text-gray-800";
                     
                     switch(row.status) {
@@ -224,7 +224,7 @@ const Grievances = () => {
               ]}
               onView={(row) => handleViewGrievance(row.id)}
               onEdit={isOrgAdmin ? (row) => console.log("Edit grievance", row) : undefined}
-              onDelete={false}
+              onDelete={undefined}
               pagination={true}
               searchEnabled={true}
             />

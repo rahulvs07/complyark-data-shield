@@ -198,7 +198,7 @@ const DataRequests = () => {
                 { 
                   header: "Contact", 
                   accessor: "email",
-                  cell: (row) => (
+                  render: (row) => (
                     <div>
                       <div>{row.email}</div>
                       <div className="text-xs text-muted-foreground">{row.phone}</div>
@@ -210,7 +210,7 @@ const DataRequests = () => {
                 { 
                   header: "Request Type", 
                   accessor: "requestType",
-                  cell: (row) => (
+                  render: (row) => (
                     <Badge variant="outline" className="font-normal">
                       {row.requestType}
                     </Badge>
@@ -219,7 +219,7 @@ const DataRequests = () => {
                 { 
                   header: "Status", 
                   accessor: "status",
-                  cell: (row) => {
+                  render: (row) => {
                     let badgeClass = "bg-gray-100 text-gray-800";
                     
                     switch(row.status) {
@@ -251,7 +251,7 @@ const DataRequests = () => {
               ]}
               onView={(row) => handleViewRequest(row.id)}
               onEdit={isOrgAdmin ? (row) => console.log("Edit request", row) : undefined}
-              onDelete={false}
+              onDelete={undefined}
               pagination={true}
               searchEnabled={true}
             />
