@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layouts/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,25 +21,113 @@ const Grievances = () => {
   const { user, isOrgAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
   const [grievances, setGrievances] = useState<Grievance[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // For a real application, this would come from API calls
-  // For now, we'll use the mock database
-  const requestStatuses = [
-    { id: 1, name: "Submitted", count: 4 },
-    { id: 2, name: "In Progress", count: 3 },
-    { id: 3, name: "Awaiting Info", count: 1 },
-    { id: 4, name: "Reassigned", count: 0 },
-    { id: 5, name: "Escalated", count: 2 },
-    { id: 6, name: "Closed", count: 6 },
-  ];
+  // Fetch grievances
+  useEffect(() => {
+    const fetchGrievances = () => {
+      setLoading(true);
+      try {
+        const fetchedGrievances = db.getGrievances(user?.organisationId);
+        setGrievances(fetchedGrievances);
+      } catch (error) {
+        console.error("Failed to fetch grievances:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrievances();
+  }, [user?.organisationId]);
+
+  // Get all request statuses
+  const requestStatuses = db.getRequestStatuses();
+
+  // Map status count
+  const statusCounts = {
+    all: grievances.length,
+    submitted: grievances.filter(g => g.requestStatusId === 1).length,
+    "in-progress": grievances.filter(g => g.requestStatusId === 2).length,
+    "awaiting-info": grievances.filter(g => g.requestStatusId === 3).length,
+    escalated: grievances.filter(g => g.requestStatusId === 5).length,
+    closed: grievances.filter(g => g.requestStatusId === 6).length,
+  };
+
+  // Filter grievances based on active tab
+  const filteredGrievances = activeTab === "all" 
+    ? grievances
+    : grievances.filter(g => {
+        const status = requestStatuses.find(s => s.requestStatusId === g.requestStatusId);
+        if (!status) return false;
+        
+        switch (activeTab) {
+          case "submitted": return status.requestStatus === "Submitted";
+          case "in-progress": return status.requestStatus === "InProgress";
+          case "awaiting-info": return status.requestStatus === "AwaitingInfo";
+          case "escalated": return status.requestStatus === "Escalated";
+          case "closed": return status.requestStatus === "Closed";
+          default: return true;
+        }
+      });
 
   // Function to handle grievance status change
-  const handleStatusChange = (grievanceId: number, newStatusId: number) => {
-    // In a real app, this would call an API endpoint
-    toast({
-      title: "Status Updated",
-      description: `Grievance #${grievanceId} status changed successfully.`,
-    });
+  const handleStatusChange = (grievance: any, newStatusId: number) => {
+    setLoading(true);
+    
+    try {
+      const grievanceToUpdate = db.getGrievanceById(grievance.id);
+      
+      if (grievanceToUpdate) {
+        // Update grievance status
+        const updatedGrievance = {
+          ...grievanceToUpdate,
+          requestStatusId: newStatusId,
+        };
+        
+        if (newStatusId === 6) { // If closing the grievance
+          updatedGrievance.closedDateTime = new Date().toISOString();
+        }
+        
+        db.updateGrievance(updatedGrievance);
+        
+        // Add history entry
+        const status = requestStatuses.find(s => s.requestStatusId === newStatusId);
+        db.addGrievanceHistory({
+          grievanceId: grievance.id,
+          statusId: newStatusId,
+          statusName: status?.requestStatus || "Unknown",
+          assignedTo: grievanceToUpdate.assignedTo,
+          assignedToName: grievance.assignedTo,
+          updatedBy: user?.userId || 0,
+          updatedByName: `${user?.firstName} ${user?.lastName}`,
+          updatedAt: new Date().toISOString(),
+          comments: `Status changed to ${status?.requestStatus || "Unknown"}`,
+          organisationId: user?.organisationId || 0
+        });
+        
+        // Refresh data
+        setGrievances(prev => 
+          prev.map(g => g.grievanceId === grievance.id 
+            ? { ...g, requestStatusId: newStatusId } 
+            : g
+          )
+        );
+        
+        toast({
+          title: "Status Updated",
+          description: `Grievance #${grievance.id} status changed to ${status?.requestStatus || "Unknown"}`,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update grievance status:", error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update the grievance status.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Function to handle grievance assignment
@@ -76,7 +164,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <ClipboardCheck className="h-6 w-6 mb-2 text-muted-foreground" />
               <p className="text-md font-medium">All Grievances</p>
-              <p className="text-2xl font-bold">{requestStatuses.reduce((acc, status) => acc + status.count, 0)}</p>
+              <p className="text-2xl font-bold">{statusCounts.all}</p>
             </CardContent>
           </Card>
           
@@ -87,7 +175,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Clock className="h-6 w-6 mb-2 text-blue-500" />
               <p className="text-md font-medium">Submitted</p>
-              <p className="text-2xl font-bold">{requestStatuses.find(s => s.name === "Submitted")?.count || 0}</p>
+              <p className="text-2xl font-bold">{statusCounts.submitted}</p>
             </CardContent>
           </Card>
           
@@ -98,7 +186,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <CalendarClock className="h-6 w-6 mb-2 text-amber-500" />
               <p className="text-md font-medium">In Progress</p>
-              <p className="text-2xl font-bold">{requestStatuses.find(s => s.name === "In Progress")?.count || 0}</p>
+              <p className="text-2xl font-bold">{statusCounts["in-progress"]}</p>
             </CardContent>
           </Card>
           
@@ -109,7 +197,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Clock className="h-6 w-6 mb-2 text-purple-500" />
               <p className="text-md font-medium">Awaiting Info</p>
-              <p className="text-2xl font-bold">{requestStatuses.find(s => s.name === "Awaiting Info")?.count || 0}</p>
+              <p className="text-2xl font-bold">{statusCounts["awaiting-info"]}</p>
             </CardContent>
           </Card>
           
@@ -120,7 +208,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <AlertCircle className="h-6 w-6 mb-2 text-red-500" />
               <p className="text-md font-medium">Escalated</p>
-              <p className="text-2xl font-bold">{requestStatuses.find(s => s.name === "Escalated")?.count || 0}</p>
+              <p className="text-2xl font-bold">{statusCounts.escalated}</p>
             </CardContent>
           </Card>
           
@@ -131,7 +219,7 @@ const Grievances = () => {
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <CheckCircle2 className="h-6 w-6 mb-2 text-green-500" />
               <p className="text-md font-medium">Closed</p>
-              <p className="text-2xl font-bold">{requestStatuses.find(s => s.name === "Closed")?.count || 0}</p>
+              <p className="text-2xl font-bold">{statusCounts.closed}</p>
             </CardContent>
           </Card>
         </div>
@@ -142,47 +230,31 @@ const Grievances = () => {
           </CardHeader>
           <CardContent>
             <DataTable
-              data={[
-                {
-                  id: 1,
-                  name: "Priya Sharma",
-                  email: "priya.sharma@example.com",
-                  phone: "+91 98765 43210",
-                  assignedTo: "Sarah Smith",
-                  createdDate: "2023-05-20",
-                  lastUpdateDate: "2023-05-22",
-                  status: "In Progress",
-                },
-                {
-                  id: 2,
-                  name: "Rahul Kumar",
-                  email: "rahul.kumar@example.com",
-                  phone: "+91 87654 32109",
-                  assignedTo: "Mike Johnson",
-                  createdDate: "2023-05-18",
-                  lastUpdateDate: "2023-05-21",
-                  status: "Submitted",
-                },
-                {
-                  id: 3,
-                  name: "Anil Reddy",
-                  email: "anil.reddy@example.com",
-                  phone: "+91 76543 21098",
-                  assignedTo: "Sarah Smith",
-                  createdDate: "2023-05-15",
-                  lastUpdateDate: "2023-05-23",
-                  status: "Escalated",
-                },
-              ]}
+              data={filteredGrievances.map(grievance => {
+                const status = requestStatuses.find(s => s.requestStatusId === grievance.requestStatusId);
+                const assignedUser = db.getUserById(grievance.assignedTo);
+                
+                return {
+                  id: grievance.grievanceId,
+                  name: `${grievance.firstName} ${grievance.lastName}`,
+                  email: grievance.email,
+                  phone: grievance.phone,
+                  assignedTo: assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : "Unassigned",
+                  createdDate: grievance.createdAt,
+                  lastUpdateDate: grievance.createdAt, // Using creation date as last update for now
+                  status: status ? status.requestStatus : "Unknown",
+                  statusId: grievance.requestStatusId,
+                };
+              })}
               columns={[
                 { header: "ID", accessor: "id" },
                 { header: "Name", accessor: "name" },
                 { 
                   header: "Contact", 
                   accessor: "email",
-                  cell: (row) => (
+                  cell: (value, row) => (
                     <div>
-                      <div>{row.email}</div>
+                      <div>{value}</div>
                       <div className="text-xs text-muted-foreground">{row.phone}</div>
                     </div>
                   )
@@ -192,17 +264,17 @@ const Grievances = () => {
                 { 
                   header: "Status", 
                   accessor: "status",
-                  cell: (row) => {
+                  cell: (value, row) => {
                     let badgeClass = "bg-gray-100 text-gray-800";
                     
-                    switch(row.status) {
+                    switch(value) {
                       case "Submitted":
                         badgeClass = "bg-blue-100 text-blue-800";
                         break;
-                      case "In Progress":
+                      case "InProgress":
                         badgeClass = "bg-amber-100 text-amber-800";
                         break;
-                      case "Awaiting Info":
+                      case "AwaitingInfo":
                         badgeClass = "bg-purple-100 text-purple-800";
                         break;
                       case "Escalated":
@@ -215,7 +287,7 @@ const Grievances = () => {
                     
                     return (
                       <Badge className={badgeClass}>
-                        {row.status}
+                        {value}
                       </Badge>
                     );
                   }
@@ -225,6 +297,11 @@ const Grievances = () => {
               onView={(row) => handleViewGrievance(row.id)}
               onEdit={isOrgAdmin ? (row) => console.log("Edit grievance", row) : undefined}
               onDelete={undefined}
+              onStatusChange={(row, statusId) => handleStatusChange(row, statusId)}
+              statusOptions={requestStatuses.map(status => ({
+                id: status.requestStatusId,
+                name: status.requestStatus
+              }))}
               pagination={true}
               searchEnabled={true}
             />

@@ -20,12 +20,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Edit, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Edit, Trash2, Search, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Column {
   header: string;
   accessor: string;
-  cellRenderer?: (value: any, row: any) => JSX.Element;
+  cell?: (value: any, row: any) => JSX.Element;
+}
+
+interface StatusOption {
+  id: number;
+  name: string;
 }
 
 interface DataTableProps {
@@ -34,6 +47,8 @@ interface DataTableProps {
   onView?: (row: any) => void;
   onEdit?: (row: any) => void;
   onDelete?: (row: any) => void;
+  onStatusChange?: (row: any, statusId: number) => void;
+  statusOptions?: StatusOption[];
   searchEnabled?: boolean;
   filterOptions?: {
     accessor: string;
@@ -49,6 +64,8 @@ const DataTable = ({
   onView,
   onEdit,
   onDelete,
+  onStatusChange,
+  statusOptions = [],
   searchEnabled = true,
   filterOptions = [],
   pagination = true,
@@ -168,14 +185,14 @@ const DataTable = ({
                 {columns.map((column) => (
                   <th key={column.accessor}>{column.header}</th>
                 ))}
-                {(onView || onEdit || onDelete) && <th>Actions</th>}
+                {(onView || onEdit || onDelete || onStatusChange) && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={columns.length + (onView || onEdit || onDelete ? 1 : 0)}
+                    colSpan={columns.length + (onView || onEdit || onDelete || onStatusChange ? 1 : 0)}
                     className="text-center py-8"
                   >
                     No data available
@@ -186,12 +203,12 @@ const DataTable = ({
                   <tr key={rowIndex}>
                     {columns.map((column) => (
                       <td key={column.accessor}>
-                        {column.cellRenderer
-                          ? column.cellRenderer(row[column.accessor], row)
+                        {column.cell
+                          ? column.cell(row[column.accessor], row)
                           : row[column.accessor]}
                       </td>
                     ))}
-                    {(onView || onEdit || onDelete) && (
+                    {(onView || onEdit || onDelete || onStatusChange) && (
                       <td>
                         <div className="flex items-center gap-2">
                           {onView && (
@@ -220,6 +237,28 @@ const DataTable = ({
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                          )}
+                          {onStatusChange && statusOptions.length > 0 && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {statusOptions.map((option) => (
+                                  <DropdownMenuItem
+                                    key={option.id}
+                                    onClick={() => onStatusChange(row, option.id)}
+                                    disabled={row.status === option.name}
+                                  >
+                                    {option.name}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                         </div>
                       </td>
