@@ -65,7 +65,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <Sidebar defaultIsOpen={isExpanded}>
+        <Sidebar>
           <SidebarHeader className="flex items-center">
             <Link to="/dashboard" className="flex items-center gap-2 px-2">
               <div className="bg-complyark-primary rounded-md p-1">
@@ -80,45 +80,45 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
               
               <SidebarMenu>
-                <SidebarMenuItem active={isActive("/dashboard")}>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/dashboard">
+                    <Link to="/dashboard" className={isActive("/dashboard") ? "bg-accent" : ""}>
                       <Home />
                       <span>Dashboard</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                <SidebarMenuItem active={isActive("/notices")}>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/notices">
+                    <Link to="/notices" className={isActive("/notices") ? "bg-accent" : ""}>
                       <FileText />
                       <span>Notices</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                <SidebarMenuItem active={isActive("/data-requests")}>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/data-requests">
+                    <Link to="/data-requests" className={isActive("/data-requests") ? "bg-accent" : ""}>
                       <TicketCheck />
                       <span>Data Requests</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                <SidebarMenuItem active={isActive("/grievances")}>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/grievances">
+                    <Link to="/grievances" className={isActive("/grievances") ? "bg-accent" : ""}>
                       <MessageCircleWarning />
                       <span>Grievances</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                <SidebarMenuItem active={isActive("/documents")}>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/documents">
+                    <Link to="/documents" className={isActive("/documents") ? "bg-accent" : ""}>
                       <FolderOpen />
                       <span>Documents</span>
                     </Link>
@@ -126,9 +126,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 </SidebarMenuItem>
                 
                 {isOrgAdmin && (
-                  <SidebarMenuItem active={isActive("/users")}>
+                  <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <Link to="/users">
+                      <Link to="/users" className={isActive("/users") ? "bg-accent" : ""}>
                         <User />
                         <span>Users</span>
                       </Link>

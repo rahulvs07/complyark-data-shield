@@ -15,6 +15,9 @@ import NotFound from "@/pages/NotFound";
 import Unauthorized from "@/pages/Unauthorized";
 import RequestPage from "@/pages/RequestPage";
 import Notices from "@/pages/Notices";
+import DataRequests from "@/pages/DataRequests";
+import Grievances from "@/pages/Grievances";
+import Documents from "@/pages/Documents";
 
 // Admin Pages
 import OrganisationsAdmin from "@/pages/admin/Organisations";
@@ -47,6 +50,33 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Notices />
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/data-requests"
+                element={
+                  <ProtectedRoute>
+                    <DataRequests />
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/grievances"
+                element={
+                  <ProtectedRoute>
+                    <Grievances />
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/documents"
+                element={
+                  <ProtectedRoute>
+                    <Documents />
                   </ProtectedRoute>
                 }
               />
