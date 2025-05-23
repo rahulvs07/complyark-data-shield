@@ -25,7 +25,105 @@ import { PersonalDataCategory, PersonalDataField } from "@/types/models";
 import db from "@/services/mockDatabase";
 import DataTable from "@/components/DataTable";
 import { toast } from "@/hooks/use-toast";
-import { ChevronRight, Download, Upload } from "lucide-react";
+import { ChevronRight, Download, Upload, Search, Info } from "lucide-react";
+
+const dataCategories = [
+  {
+    categoryId: 1,
+    categoryName: "Name",
+    fields: [
+      { fieldId: 101, fieldName: "First Name", reasonForCollection: "To identify the individual correctly." },
+      { fieldId: 102, fieldName: "Middle Name", reasonForCollection: "For full legal identification." },
+      { fieldId: 103, fieldName: "Last Name", reasonForCollection: "To identify the individual correctly." },
+      { fieldId: 104, fieldName: "Preferred Name / Nickname", reasonForCollection: "For personalised communication." },
+      { fieldId: 105, fieldName: "Former Name(s)", reasonForCollection: "For record-keeping and legal verification." }
+    ]
+  },
+  {
+    categoryId: 2,
+    categoryName: "Contact Details",
+    fields: [
+      { fieldId: 201, fieldName: "Residential Address", reasonForCollection: "For official correspondence and service delivery." },
+      { fieldId: 202, fieldName: "Mailing Address", reasonForCollection: "To send documents, communications, or parcels." },
+      { fieldId: 203, fieldName: "Country of Residence", reasonForCollection: "For compliance with regional laws." },
+      { fieldId: 204, fieldName: "Postcode", reasonForCollection: "For accurate address verification." },
+      { fieldId: 205, fieldName: "Emergency Contact Information", reasonForCollection: "For emergencies or health & safety reasons." }
+    ]
+  },
+  {
+    categoryId: 3,
+    categoryName: "Email",
+    fields: [
+      { fieldId: 301, fieldName: "Personal Email Address", reasonForCollection: "For general communication." },
+      { fieldId: 302, fieldName: "Work Email Address", reasonForCollection: "For official, work-related communication." },
+      { fieldId: 303, fieldName: "Alternate Email Address", reasonForCollection: "For backup communication." }
+    ]
+  },
+  {
+    categoryId: 4,
+    categoryName: "Phone",
+    fields: [
+      { fieldId: 401, fieldName: "Personal Mobile Number", reasonForCollection: "For direct communication." },
+      { fieldId: 402, fieldName: "Work Telephone Number", reasonForCollection: "For work-related communication." },
+      { fieldId: 403, fieldName: "Home Telephone Number", reasonForCollection: "As a fallback contact method." },
+      { fieldId: 404, fieldName: "Emergency Contact Number", reasonForCollection: "For urgent contact in case of emergencies." }
+    ]
+  },
+  {
+    categoryId: 5,
+    categoryName: "Financial Info",
+    fields: [
+      { fieldId: 501, fieldName: "Bank Account Number", reasonForCollection: "For salary or financial transactions." },
+      { fieldId: 502, fieldName: "Sort Code", reasonForCollection: "For banking and payment processing (UK-specific)." },
+      { fieldId: 503, fieldName: "Credit/Debit Card Details", reasonForCollection: "For billing and secure payments." },
+      { fieldId: 504, fieldName: "Billing Address", reasonForCollection: "For issuing invoices and matching transactions." },
+      { fieldId: 505, fieldName: "Tax Identification Number", reasonForCollection: "For tax reporting and statutory compliance." },
+      { fieldId: 506, fieldName: "Salary and Compensation Details", reasonForCollection: "For payroll and financial planning." },
+      { fieldId: 507, fieldName: "Payment History", reasonForCollection: "To track and audit transactions." }
+    ]
+  },
+  {
+    categoryId: 6,
+    categoryName: "Health Data",
+    fields: [
+      { fieldId: 601, fieldName: "Medical History", reasonForCollection: "For providing appropriate care and accommodations." },
+      { fieldId: 602, fieldName: "Disability Status", reasonForCollection: "To ensure accessibility and legal compliance." },
+      { fieldId: 603, fieldName: "Mental Health Information", reasonForCollection: "To support employee well-being and workplace accommodations." },
+      { fieldId: 604, fieldName: "Immunisation Records", reasonForCollection: "For workplace health compliance (e.g., COVID-19)." },
+      { fieldId: 605, fieldName: "Prescription Details", reasonForCollection: "For health and medical records." },
+      { fieldId: 606, fieldName: "Allergies and Chronic Conditions", reasonForCollection: "For safety and emergency preparedness." },
+      { fieldId: 607, fieldName: "Fitness/Wellness Data", reasonForCollection: "For wellness initiatives or health tracking." }
+    ]
+  },
+  {
+    categoryId: 7,
+    categoryName: "Demographics",
+    fields: [
+      { fieldId: 701, fieldName: "Date of Birth", reasonForCollection: "For identity verification and age-based eligibility." },
+      { fieldId: 702, fieldName: "Gender", reasonForCollection: "For diversity metrics and appropriate communication." },
+      { fieldId: 703, fieldName: "Nationality", reasonForCollection: "For eligibility and compliance with immigration laws." },
+      { fieldId: 704, fieldName: "Ethnicity", reasonForCollection: "For diversity monitoring and reporting." },
+      { fieldId: 705, fieldName: "Marital Status", reasonForCollection: "For HR benefits and record keeping." },
+      { fieldId: 706, fieldName: "Number of Dependents", reasonForCollection: "For HR planning and benefits eligibility." },
+      { fieldId: 707, fieldName: "Education Level", reasonForCollection: "For assessing qualifications." },
+      { fieldId: 708, fieldName: "Employment Status", reasonForCollection: "For eligibility and demographic profiling." }
+    ]
+  },
+  {
+    categoryId: 8,
+    categoryName: "Sensitive Data",
+    fields: [
+      { fieldId: 801, fieldName: "Racial or Ethnic Origin", reasonForCollection: "For diversity compliance and monitoring." },
+      { fieldId: 802, fieldName: "Political Opinions", reasonForCollection: "Only collected when required for transparency (e.g., political organisations)." },
+      { fieldId: 803, fieldName: "Religious or Philosophical Beliefs", reasonForCollection: "For accommodation of practices (e.g., holidays, dietary needs)." },
+      { fieldId: 804, fieldName: "Trade Union Membership", reasonForCollection: "For collective bargaining and legal compliance." },
+      { fieldId: 805, fieldName: "Genetic Data", reasonForCollection: "For specific health or legal contexts (with consent)." },
+      { fieldId: 806, fieldName: "Biometric Data", reasonForCollection: "For secure identification and access control." },
+      { fieldId: 807, fieldName: "Sexual Orientation", reasonForCollection: "For equality monitoring and anti-discrimination policies." },
+      { fieldId: 808, fieldName: "Criminal Convictions or Offences", reasonForCollection: "For background checks, especially in sensitive or regulated industries." }
+    ]
+  }
+];
 
 const Notices = () => {
   const [activeTab, setActiveTab] = useState("questionnaire");
@@ -36,11 +134,8 @@ const Notices = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<Record<string, boolean>>({});
   const [selectAllLanguages, setSelectAllLanguages] = useState(false);
   const [translatedNotices, setTranslatedNotices] = useState<{ language: string; filename: string }[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   
-  // Load personal data categories and fields from mock database
-  const categories = db.getPersonalDataCategories();
-  const allFields = db.getPersonalDataFields();
-
   // Sample Templates
   const templates = [
     { id: 1, name: "Standard Privacy Notice", file: "standard_privacy_notice.pdf" },
@@ -62,15 +157,62 @@ const Notices = () => {
     "Marathi", "Nepali", "Punjabi", "Tamil", "Telugu", "Urdu"
   ];
 
+  // Filter categories and fields based on search term
+  const filteredCategories = searchTerm
+    ? dataCategories.map(category => ({
+        ...category,
+        fields: category.fields.filter(field => 
+          field.fieldName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          field.reasonForCollection.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })).filter(category => category.fields.length > 0)
+    : dataCategories;
+
   // Handle field selection
   const handleFieldSelection = (fieldId: number, selected: boolean) => {
     setSelectedFields((prev) => ({
       ...prev,
       [fieldId]: {
         selected,
-        reason: prev[fieldId]?.reason || ""
+        reason: prev[fieldId]?.reason || dataCategories
+          .flatMap(cat => cat.fields)
+          .find(f => f.fieldId === fieldId)?.reasonForCollection || ""
       }
     }));
+  };
+
+  // Handle category selection (select all fields in a category)
+  const handleCategorySelection = (categoryId: number, selected: boolean) => {
+    const fieldsInCategory = dataCategories
+      .find(cat => cat.categoryId === categoryId)?.fields || [];
+    
+    const updatedFields = { ...selectedFields };
+    fieldsInCategory.forEach(field => {
+      updatedFields[field.fieldId] = {
+        selected,
+        reason: updatedFields[field.fieldId]?.reason || field.reasonForCollection
+      };
+    });
+    
+    setSelectedFields(updatedFields);
+  };
+
+  // Check if all fields in a category are selected
+  const isCategoryFullySelected = (categoryId: number) => {
+    const fieldsInCategory = dataCategories
+      .find(cat => cat.categoryId === categoryId)?.fields || [];
+    
+    return fieldsInCategory.length > 0 && 
+      fieldsInCategory.every(field => selectedFields[field.fieldId]?.selected);
+  };
+
+  // Check if any fields in a category are selected
+  const isCategoryPartiallySelected = (categoryId: number) => {
+    const fieldsInCategory = dataCategories
+      .find(cat => cat.categoryId === categoryId)?.fields || [];
+    
+    return fieldsInCategory.some(field => selectedFields[field.fieldId]?.selected) &&
+      !fieldsInCategory.every(field => selectedFields[field.fieldId]?.selected);
   };
 
   // Handle reason change
@@ -90,14 +232,28 @@ const Notices = () => {
       .filter(([_, value]) => value.selected)
       .map(([key, value]) => {
         const fieldId = parseInt(key);
-        const field = allFields.find(f => f.fieldId === fieldId);
+        const field = dataCategories
+          .flatMap(cat => cat.fields)
+          .find(f => f.fieldId === fieldId);
+          
         return {
           fieldId,
           fieldName: field?.fieldName || "",
-          categoryName: field?.categoryName || "",
+          categoryName: dataCategories.find(cat => 
+            cat.fields.some(f => f.fieldId === fieldId)
+          )?.categoryName || "",
           reason: value.reason
         };
       });
+    
+    if (selectedFieldsData.length === 0) {
+      toast({
+        title: "No Fields Selected",
+        description: "Please select at least one data field to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Create a formatted dataset for the notice
     let formattedData = "Selected Personal Data Fields:\n\n";
@@ -241,43 +397,86 @@ const Notices = () => {
               {/* Questionnaire Tab */}
               <TabsContent value="questionnaire" className="complyark-tab-content">
                 <div className="space-y-6">
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground mb-6">
                     Select the categories of personal data collected by your organisation:
                   </p>
                   
+                  <div className="flex mb-6">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search data fields..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-4">
-                    {categories.map((category) => (
+                    {filteredCategories.length === 0 && (
+                      <div className="p-4 text-center">
+                        <p>No matching data fields found.</p>
+                      </div>
+                    )}
+                    
+                    {filteredCategories.map((category) => (
                       <Accordion type="single" collapsible key={category.categoryId}>
                         <AccordionItem value={`category-${category.categoryId}`}>
                           <AccordionTrigger>
-                            <span className="font-medium">{category.categoryName}</span>
+                            <div className="flex items-center gap-2">
+                              <Checkbox 
+                                id={`category-${category.categoryId}`}
+                                checked={isCategoryFullySelected(category.categoryId)}
+                                indeterminate={isCategoryPartiallySelected(category.categoryId)}
+                                onCheckedChange={(checked) => 
+                                  handleCategorySelection(category.categoryId, checked === true)
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="font-medium">{category.categoryName}</span>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                ({category.fields.length} fields)
+                              </span>
+                            </div>
                           </AccordionTrigger>
                           <AccordionContent>
                             <div className="space-y-4">
-                              {allFields
-                                .filter((field) => field.categoryId === category.categoryId)
-                                .map((field) => (
-                                  <div key={field.fieldId} className="grid grid-cols-12 gap-4 items-center">
-                                    <div className="col-span-4 flex items-center space-x-2">
-                                      <Checkbox 
-                                        id={`field-${field.fieldId}`}
-                                        checked={!!selectedFields[field.fieldId]?.selected}
-                                        onCheckedChange={(checked) => 
-                                          handleFieldSelection(field.fieldId, checked === true)
-                                        }
-                                      />
-                                      <Label htmlFor={`field-${field.fieldId}`}>{field.fieldName}</Label>
-                                    </div>
-                                    <div className="col-span-8">
+                              <div className="grid grid-cols-12 gap-4 border-b pb-2 font-medium text-sm text-muted-foreground">
+                                <div className="col-span-4">Field Name</div>
+                                <div className="col-span-8">Reason for Collection</div>
+                              </div>
+                              {category.fields.map((field) => (
+                                <div key={field.fieldId} className="grid grid-cols-12 gap-4 items-center">
+                                  <div className="col-span-4 flex items-center space-x-2">
+                                    <Checkbox 
+                                      id={`field-${field.fieldId}`}
+                                      checked={!!selectedFields[field.fieldId]?.selected}
+                                      onCheckedChange={(checked) => 
+                                        handleFieldSelection(field.fieldId, checked === true)
+                                      }
+                                    />
+                                    <Label htmlFor={`field-${field.fieldId}`} className="cursor-pointer">
+                                      {field.fieldName}
+                                    </Label>
+                                  </div>
+                                  <div className="col-span-8">
+                                    <div className="relative">
                                       <Input
                                         placeholder="Reason for collection"
                                         value={selectedFields[field.fieldId]?.reason || field.reasonForCollection}
                                         onChange={(e) => handleReasonChange(field.fieldId, e.target.value)}
                                         disabled={!selectedFields[field.fieldId]?.selected}
+                                        className="pr-8"
                                       />
+                                      <div className="absolute right-2 top-2.5 text-muted-foreground" title={field.reasonForCollection}>
+                                        <Info className="h-4 w-4" />
+                                      </div>
                                     </div>
                                   </div>
-                                ))}
+                                </div>
+                              ))}
                             </div>
                           </AccordionContent>
                         </AccordionItem>
@@ -285,7 +484,10 @@ const Notices = () => {
                     ))}
                   </div>
                   
-                  <div className="flex justify-end">
+                  <div className="flex justify-between pt-4">
+                    <div className="text-sm">
+                      Selected {Object.values(selectedFields).filter(field => field.selected).length} fields
+                    </div>
                     <Button onClick={handleQuestionnaireNext}>
                       Next <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -592,3 +794,4 @@ For any questions or concerns, please contact our Data Protection Officer.
 };
 
 export default Notices;
+

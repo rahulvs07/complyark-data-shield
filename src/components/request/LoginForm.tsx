@@ -45,8 +45,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
             onChange={setOTP}
             render={({ slots }) => (
               <InputOTPGroup>
-                {slots.map((slot, index) => (
-                  <InputOTPSlot key={index} {...slot} />
+                {slots.map((slot) => (
+                  <InputOTPSlot key={slot.key} {...slot} />
                 ))}
               </InputOTPGroup>
             )}
