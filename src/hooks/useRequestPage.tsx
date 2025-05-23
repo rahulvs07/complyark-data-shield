@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import db from "@/services/mockDatabase";
+import { Mail } from "lucide-react";
 
 interface UseRequestPageProps {
   orgIdEncoded: string | undefined;
@@ -21,6 +22,9 @@ interface UseRequestPageReturn {
   phone: string;
   dpRequestType: string;
   comments: string;
+  showOTP: boolean;
+  otp: string;
+  setOTP: (otp: string) => void;
   setRequestType: (type: "dp-request" | "grievance" | null) => void;
   setFirstName: (value: string) => void;
   setLastName: (value: string) => void;
@@ -29,6 +33,7 @@ interface UseRequestPageReturn {
   setDpRequestType: (value: string) => void;
   setComments: (value: string) => void;
   handleLogin: (e: React.FormEvent) => void;
+  handleVerifyOTP: (e: React.FormEvent) => void;
   handleSubmit: (e: React.FormEvent) => void;
   handleLogout: () => void;
 }
@@ -41,6 +46,9 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOTP] = useState("");
+  const [generatedOTP, setGeneratedOTP] = useState("");
   
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -80,6 +88,11 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
     }
   }, [orgIdEncoded, navigate]);
 
+  const generateOTP = () => {
+    // Generate a 6-digit OTP
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -95,15 +108,54 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
       return;
     }
     
-    // Simulate API call
+    // Generate OTP
+    const newOTP = generateOTP();
+    setGeneratedOTP(newOTP);
+    
+    // Simulate sending OTP email
+    console.log(`Sending OTP ${newOTP} to ${email}`);
+    
+    // Show mock email sent toast with the OTP (in real app, this would be sent via email)
     setTimeout(() => {
-      setIsLoggedIn(true);
+      toast({
+        title: "OTP Sent",
+        description: (
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            <span>Verification code sent to your email: {newOTP}</span>
+          </div>
+        ),
+      });
+      
+      setIsLoading(false);
+      setShowOTP(true);
+    }, 1500);
+  };
+
+  const handleVerifyOTP = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Verify OTP
+    if (otp === generatedOTP) {
+      // Simulate API call for successful verification
+      setTimeout(() => {
+        setIsLoggedIn(true);
+        setIsLoading(false);
+        setShowOTP(false);
+        toast({
+          title: "Login Successful",
+          description: "You are now logged in to submit a request.",
+        });
+      }, 1000);
+    } else {
       setIsLoading(false);
       toast({
-        title: "Login Successful",
-        description: "You are now logged in to submit a request.",
+        title: "Invalid OTP",
+        description: "The verification code you entered is incorrect. Please try again.",
+        variant: "destructive",
       });
-    }, 1000);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -231,6 +283,8 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
     setIsLoggedIn(false);
     setRequestType(null);
     setIsSubmitted(false);
+    setShowOTP(false);
+    setOTP("");
     // Reset form fields
     setFirstName("");
     setLastName("");
@@ -253,6 +307,9 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
     phone,
     dpRequestType,
     comments,
+    showOTP,
+    otp,
+    setOTP,
     setRequestType,
     setFirstName,
     setLastName,
@@ -261,6 +318,7 @@ export function useRequestPage({ orgIdEncoded }: UseRequestPageProps): UseReques
     setDpRequestType,
     setComments,
     handleLogin,
+    handleVerifyOTP,
     handleSubmit,
     handleLogout
   };

@@ -23,6 +23,9 @@ const RequestPage = () => {
     phone,
     dpRequestType,
     comments,
+    showOTP,
+    otp,
+    setOTP,
     setRequestType,
     setFirstName,
     setLastName,
@@ -31,6 +34,7 @@ const RequestPage = () => {
     setDpRequestType,
     setComments,
     handleLogin,
+    handleVerifyOTP,
     handleSubmit,
     handleLogout
   } = useRequestPage({ orgIdEncoded });
@@ -52,7 +56,7 @@ const RequestPage = () => {
               <CardHeader>
                 <CardTitle className="text-2xl">Welcome to {orgName}</CardTitle>
                 <CardDescription>
-                  Please log in to submit a request or grievance
+                  {showOTP ? "Enter the verification code sent to your email" : "Please log in to submit a request or grievance"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -60,7 +64,11 @@ const RequestPage = () => {
                   email={email} 
                   setEmail={setEmail} 
                   isLoading={isLoading} 
-                  onLogin={handleLogin} 
+                  onLogin={handleLogin}
+                  showOTP={showOTP}
+                  otp={otp}
+                  setOTP={setOTP}
+                  onVerifyOTP={handleVerifyOTP}
                 />
               </CardContent>
             </Card>
